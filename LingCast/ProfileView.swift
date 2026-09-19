@@ -1,5 +1,5 @@
 //
-//  ContentView.swift
+//  ProfileView.swift
 //  LingCast
 //
 //  Created by 윤예진 on 9/11/26.
@@ -7,12 +7,12 @@
 
 import SwiftUI
 
-struct ContentView: View {
+struct ProfileView: View {
     var body: some View {
-        MainTabView()
+        Text("Profile")
     }
 }
 
 #Preview {
-    ContentView()
+    ProfileView()
 }

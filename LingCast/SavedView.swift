@@ -1,5 +1,5 @@
 //
-//  ContentView.swift
+//  SavedView.swift
 //  LingCast
 //
 //  Created by 윤예진 on 9/11/26.
@@ -7,12 +7,12 @@
 
 import SwiftUI
 
-struct ContentView: View {
+struct SavedView: View {
     var body: some View {
-        MainTabView()
+        Text("Saved")
     }
 }
 
 #Preview {
-    ContentView()
+    SavedView()
 }
