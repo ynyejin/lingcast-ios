@@ -9,21 +9,24 @@ import SwiftUI
 
 struct LearnView: View {
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: HomeLayout.sectionSpacing) {
-                LearnHeaderView()
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: HomeLayout.sectionSpacing) {
+                    LearnHeaderView()
 
-                WeeklyLearningCard(summary: LearnMockData.weekly)
+                    WeeklyLearningCard(summary: LearnMockData.weekly)
 
-                recentSection
-                reviewSection
+                    recentSection
+                    reviewSection
+                }
+                .padding(.horizontal, HomeLayout.horizontalPadding)
+                .padding(.top, 8)
+                .padding(.bottom, 48)
             }
-            .padding(.horizontal, HomeLayout.horizontalPadding)
-            .padding(.top, 8)
-            .padding(.bottom, 48)
+            .scrollIndicators(.hidden)
+            .background(LingcastColor.background.ignoresSafeArea())
+            .toolbar(.hidden, for: .navigationBar)
         }
-        .scrollIndicators(.hidden)
-        .background(LingcastColor.background.ignoresSafeArea())
     }
 
     private var recentSection: some View {

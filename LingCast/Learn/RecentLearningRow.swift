@@ -9,6 +9,7 @@ import SwiftUI
 
 struct RecentLearningRow: View {
     let item: RecentLearningItem
+    @Environment(\.playEpisode) private var playEpisode
 
     var body: some View {
         HStack(spacing: 14) {
@@ -96,7 +97,9 @@ struct RecentLearningRow: View {
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(LingcastColor.secondaryText)
         case .inProgress:
-            Button(action: {}) {
+            Button {
+                playEpisode(PlayableEpisode(item))
+            } label: {
                 Image(systemName: "play.fill")
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(LingcastColor.accent)

@@ -9,6 +9,7 @@ import SwiftUI
 
 struct SavedContentRow: View {
     let story: SavedStory
+    @Environment(\.playEpisode) private var playEpisode
 
     var body: some View {
         HStack(spacing: 14) {
@@ -36,7 +37,9 @@ struct SavedContentRow: View {
 
             Spacer(minLength: 8)
 
-            LingcastPlayButton(size: 40)
+            LingcastPlayButton(size: 40) {
+                playEpisode(PlayableEpisode(story))
+            }
         }
         .padding(16)
         .background(

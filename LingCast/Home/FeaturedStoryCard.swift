@@ -9,6 +9,7 @@ import SwiftUI
 
 struct FeaturedStoryCard: View {
     let story: HomeStory
+    @Environment(\.playEpisode) private var playEpisode
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -47,7 +48,9 @@ struct FeaturedStoryCard: View {
 
                 Spacer(minLength: 8)
 
-                LingcastPlayButton(size: 52)
+                LingcastPlayButton(size: 52) {
+                    playEpisode(PlayableEpisode(story))
+                }
             }
             .padding(20)
         }

@@ -11,29 +11,32 @@ struct SavedView: View {
     @State private var selectedSegment = SavedSegment.content
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: HomeLayout.sectionSpacing) {
-                SavedHeaderView()
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: HomeLayout.sectionSpacing) {
+                    SavedHeaderView()
 
-                SavedSegmentedControl(
-                    selection: $selectedSegment,
-                    wordCount: SavedMockData.words.count
-                )
+                    SavedSegmentedControl(
+                        selection: $selectedSegment,
+                        wordCount: SavedMockData.words.count
+                    )
 
-                switch selectedSegment {
-                case .content:
-                    contentSection
-                case .words:
-                    wordsSection
+                    switch selectedSegment {
+                    case .content:
+                        contentSection
+                    case .words:
+                        wordsSection
+                    }
                 }
+                .padding(.horizontal, HomeLayout.horizontalPadding)
+                .padding(.top, 8)
+                .padding(.bottom, 48)
             }
-            .padding(.horizontal, HomeLayout.horizontalPadding)
-            .padding(.top, 8)
-            .padding(.bottom, 48)
+            .scrollIndicators(.hidden)
+            .background(LingcastColor.background.ignoresSafeArea())
+            .animation(.easeInOut(duration: 0.2), value: selectedSegment)
+            .toolbar(.hidden, for: .navigationBar)
         }
-        .scrollIndicators(.hidden)
-        .background(LingcastColor.background.ignoresSafeArea())
-        .animation(.easeInOut(duration: 0.2), value: selectedSegment)
     }
 
     private var contentSection: some View {

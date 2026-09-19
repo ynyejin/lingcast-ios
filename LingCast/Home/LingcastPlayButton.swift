@@ -9,9 +9,10 @@ import SwiftUI
 
 struct LingcastPlayButton: View {
     var size: CGFloat = 54
+    var action: () -> Void = {}
 
     var body: some View {
-        Button(action: {}) {
+        Button(action: action) {
             Image(systemName: "play.fill")
                 .font(.system(size: size * 0.32, weight: .semibold))
                 .foregroundStyle(.white)
