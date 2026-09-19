@@ -9,7 +9,43 @@ import SwiftUI
 
 struct LearnView: View {
     var body: some View {
-        Text("Learn")
+        ScrollView {
+            VStack(alignment: .leading, spacing: HomeLayout.sectionSpacing) {
+                LearnHeaderView()
+
+                WeeklyLearningCard(summary: LearnMockData.weekly)
+
+                recentSection
+                reviewSection
+            }
+            .padding(.horizontal, HomeLayout.horizontalPadding)
+            .padding(.top, 8)
+            .padding(.bottom, 48)
+        }
+        .scrollIndicators(.hidden)
+        .background(LingcastColor.background.ignoresSafeArea())
+    }
+
+    private var recentSection: some View {
+        VStack(alignment: .leading, spacing: HomeLayout.itemSpacing) {
+            HomeSectionHeader(title: "최근 학습한 콘텐츠", actionTitle: "전체 보기")
+
+            ForEach(LearnMockData.recent) { item in
+                RecentLearningRow(item: item)
+            }
+        }
+    }
+
+    private var reviewSection: some View {
+        VStack(alignment: .leading, spacing: HomeLayout.itemSpacing) {
+            HomeSectionHeader(title: "복습이 필요해요")
+
+            HStack(alignment: .top, spacing: 12) {
+                ForEach(LearnMockData.reviewPrompts) { prompt in
+                    ReviewNeedCard(prompt: prompt)
+                }
+            }
+        }
     }
 }
 
