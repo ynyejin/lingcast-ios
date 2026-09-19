@@ -11,6 +11,7 @@ struct HomeSectionHeader: View {
     let title: String
     var actionTitle: String? = nil
     var showsChevron: Bool = false
+    var action: (() -> Void)? = nil
 
     var body: some View {
         HStack {
@@ -22,7 +23,7 @@ struct HomeSectionHeader: View {
             Spacer()
 
             if let actionTitle {
-                Button(action: {}) {
+                Button(action: { action?() }) {
                     HStack(spacing: 2) {
                         Text(actionTitle)
                         if showsChevron {

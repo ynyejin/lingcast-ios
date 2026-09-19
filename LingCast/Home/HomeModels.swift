@@ -41,6 +41,21 @@ struct HomeTopic: Identifiable {
 enum HomeMockData {
     static let categories = ["전체", "IT", "경제", "과학", "국제"]
 
+    static func feedStories(for category: String) -> [HomeStory] {
+        switch category {
+        case "IT":
+            return itFeatured
+        case "경제":
+            return economyFeatured
+        case "과학":
+            return scienceFeatured
+        case "국제":
+            return worldFeatured
+        default:
+            return itFeatured + economyFeatured + scienceFeatured + worldFeatured
+        }
+    }
+
     static func featuredStories(for category: String) -> [HomeStory] {
         switch category {
         case "IT":

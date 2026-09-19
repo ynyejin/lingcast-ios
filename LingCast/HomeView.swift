@@ -11,22 +11,38 @@ struct HomeView: View {
     @State private var selectedCategory = HomeMockData.categories[0]
     @State private var featuredStoryID: String?
 
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: HomeLayout.sectionSpacing) {
-                HomeHeaderView()
-                    .padding(.horizontal, HomeLayout.horizontalPadding)
+    @State private var isShowingAllNews = false
+    @State private var isShowingRecommended = false
 
-                featuredNewsSection
-                recommendedSection
-                continueLearningSection
-                exploreSection
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: HomeLayout.sectionSpacing) {
+                    HomeHeaderView()
+                        .padding(.horizontal, HomeLayout.horizontalPadding)
+
+                    featuredNewsSection
+                    recommendedSection
+                    continueLearningSection
+                    exploreSection
+                }
+                .padding(.top, 8)
+                .padding(.bottom, 48)
             }
-            .padding(.top, 8)
-            .padding(.bottom, 48)
+            .scrollIndicators(.hidden)
+            .background(LingcastColor.background.ignoresSafeArea())
+            .toolbar(.hidden, for: .navigationBar)
+            .navigationDestination(isPresented: $isShowingAllNews) {
+                TodayNewsFeedView(initialCategory: selectedCategory)
+            }
+            .navigationDestination(isPresented: $isShowingRecommended) {
+                EditorialNewsFeedView(
+                    title: "추천 콘텐츠",
+                    subtitle: "관심 분야를 바탕으로 추천했어요",
+                    stories: HomeMockData.recommended
+                )
+            }
         }
-        .scrollIndicators(.hidden)
-        .background(LingcastColor.background.ignoresSafeArea())
     }
 
     private var featuredNewsSection: some View {
@@ -34,7 +50,8 @@ struct HomeView: View {
             HomeSectionHeader(
                 title: "오늘의 주요 뉴스",
                 actionTitle: "전체 보기",
-                showsChevron: true
+                showsChevron: true,
+                action: { isShowingAllNews = true }
             )
             .padding(.horizontal, HomeLayout.horizontalPadding)
 
@@ -51,7 +68,11 @@ struct HomeView: View {
 
     private var recommendedSection: some View {
         VStack(alignment: .leading, spacing: HomeLayout.itemSpacing) {
-            HomeSectionHeader(title: "추천 콘텐츠", actionTitle: "전체 보기")
+            HomeSectionHeader(
+                title: "추천 콘텐츠",
+                actionTitle: "전체 보기",
+                action: { isShowingRecommended = true }
+            )
                 .padding(.horizontal, HomeLayout.horizontalPadding)
 
             GeometryReader { proxy in
