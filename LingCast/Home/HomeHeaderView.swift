@@ -34,14 +34,6 @@ struct HomeHeaderView: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel("검색")
-
-            Text("A")
-                .font(.headline)
-                .fontWeight(.semibold)
-                .foregroundStyle(.white)
-                .frame(width: 44, height: 44)
-                .background(LingcastColor.accent, in: Circle())
-                .accessibilityLabel("프로필")
         }
     }
 

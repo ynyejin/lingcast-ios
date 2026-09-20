@@ -58,9 +58,9 @@ struct PlayableEpisode: Identifiable, Hashable {
             id: item.id,
             category: item.category,
             headline: item.title,
-            durationMinutes: 6,
+            durationMinutes: item.durationMinutes,
             description: "",
-            artwork: item.category == "WORLD" ? .worldNews : .technology
+            artwork: item.artwork
         )
     }
 }

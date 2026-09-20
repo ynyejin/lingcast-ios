@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct LearnView: View {
+    @State private var isShowingLearningHistory = false
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -26,12 +28,19 @@ struct LearnView: View {
             .scrollIndicators(.hidden)
             .background(LingcastColor.background.ignoresSafeArea())
             .toolbar(.hidden, for: .navigationBar)
+            .navigationDestination(isPresented: $isShowingLearningHistory) {
+                RecentLearningView()
+            }
         }
     }
 
     private var recentSection: some View {
         VStack(alignment: .leading, spacing: HomeLayout.itemSpacing) {
-            HomeSectionHeader(title: "최근 학습한 콘텐츠", actionTitle: "전체 보기")
+            HomeSectionHeader(
+                title: "최근 학습한 콘텐츠",
+                actionTitle: "전체 보기",
+                action: { isShowingLearningHistory = true }
+            )
 
             ForEach(LearnMockData.recent) { item in
                 RecentLearningRow(item: item)
