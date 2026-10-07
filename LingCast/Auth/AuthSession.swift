@@ -36,7 +36,7 @@ final class AuthSession {
                 response.refreshToken,
                 forKey: "refreshToken"
             )
-
+            
             isLoggedIn = true
 
         } catch {

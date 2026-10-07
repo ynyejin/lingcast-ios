@@ -50,3 +50,12 @@ struct SignupResponse: Decodable {
     let email: String
     let nickname: String
 }
+
+// 내 정보 조회 응답
+struct UserResponse: Decodable {
+    let userId: Int64
+    let email: String
+    let nickname: String
+    let englishLevel: String?
+    let createdAt: String
+}

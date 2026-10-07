@@ -58,4 +58,14 @@ final class AuthService {
 
         return response.data
     }
+    
+    func getMyInfo() async throws -> UserResponse {
+
+        let response: APIResponse<UserResponse> =
+            try await APIClient.shared.request(
+                endpoint: "/api/v1/users/me"
+            )
+
+        return response.data
+    }
 }

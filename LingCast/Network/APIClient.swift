@@ -29,10 +29,21 @@ final class APIClient {
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.httpBody = body
+
         request.setValue(
             "application/json",
             forHTTPHeaderField: "Content-Type"
         )
+
+        // 저장된 Access Token이 있으면 인증 헤더에 자동 추가
+        if let accessToken = UserDefaults.standard.string(
+            forKey: "accessToken"
+        ) {
+            request.setValue(
+                "Bearer \(accessToken)",
+                forHTTPHeaderField: "Authorization"
+            )
+        }
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
