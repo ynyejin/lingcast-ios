@@ -13,6 +13,13 @@ struct HomeView: View {
 
     @State private var isShowingAllNews = false
     @State private var isShowingRecommended = false
+    
+    // 서버에서 받아온 실제 뉴스
+    @State private var newsStories: [HomeStory] = []
+
+    // 뉴스 로딩 및 오류 상태
+    @State private var isLoadingNews = false
+    @State private var newsErrorMessage: String?
 
     var body: some View {
         NavigationStack {
@@ -42,6 +49,9 @@ struct HomeView: View {
                     stories: HomeMockData.recommended
                 )
             }
+            .task(id: selectedCategory) {
+                await loadNews(category: selectedCategory)
+            }
         }
     }
 
@@ -58,11 +68,32 @@ struct HomeView: View {
             CategoryFilterView(selectedCategory: $selectedCategory)
                 .padding(.horizontal, HomeLayout.horizontalPadding)
 
-            FeaturedNewsCarousel(
-                stories: HomeMockData.featuredStories(for: selectedCategory),
-                currentStoryID: $featuredStoryID
-            )
-            .id(selectedCategory)
+            if isLoadingNews {
+                ProgressView("뉴스를 불러오는 중...")
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 40)
+
+            } else if let newsErrorMessage {
+                Text(newsErrorMessage)
+                    .font(.subheadline)
+                    .foregroundStyle(LingcastColor.secondaryText)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 40)
+
+            } else if newsStories.isEmpty {
+                Text("표시할 뉴스가 없습니다.")
+                    .font(.subheadline)
+                    .foregroundStyle(LingcastColor.secondaryText)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 40)
+
+            } else {
+                FeaturedNewsCarousel(
+                    stories: newsStories,
+                    currentStoryID: $featuredStoryID
+                )
+                .id(selectedCategory)
+            }
         }
     }
 
@@ -115,6 +146,35 @@ struct HomeView: View {
             }
         }
         .padding(.horizontal, HomeLayout.horizontalPadding)
+    }
+
+    // 선택한 카테고리의 실제 뉴스 조회
+    @MainActor
+    private func loadNews(category: String) async {
+        isLoadingNews = true
+        newsErrorMessage = nil
+        newsStories = []
+        featuredStoryID = nil
+
+        do {
+            let response = try await NewsService.shared.getNews(
+                category: category
+            )
+
+            // 서버 응답을 HomeStory로 변환
+            newsStories = response.content.map {
+                HomeStory(news: $0)
+            }
+
+            print("뉴스 로딩 성공 - 카테고리:", category)
+            print("뉴스 개수:", newsStories.count)
+
+        } catch {
+            newsErrorMessage = "뉴스를 불러오지 못했습니다."
+            print("뉴스 로딩 실패:", error)
+        }
+
+        isLoadingNews = false
     }
 }
 

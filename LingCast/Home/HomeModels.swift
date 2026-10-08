@@ -28,7 +28,46 @@ struct HomeStory: Identifiable {
     let artwork: HomeArtworkStyle
 
     var metadataText: String {
-        "\(category) · \(durationMinutes) MIN"
+        durationMinutes > 0
+            ? "\(category) · \(durationMinutes) MIN"
+            : category
+    }
+
+    // 백엔드 뉴스 데이터를 HomeStory로 변환
+    init(news: NewsListItem) {
+        self.id = String(news.newsId)
+        self.category = news.category
+        self.durationMinutes = 0
+        self.headline = news.title
+        self.description = news.summary ?? ""
+
+        switch news.category {
+        case "IT":
+            self.artwork = .technology
+        case "경제":
+            self.artwork = .business
+        case "과학":
+            self.artwork = .science
+        default:
+            self.artwork = .world
+        }
+    }
+
+    // 기존 더미 데이터에서 사용하는 생성자 유지
+    init(
+        id: String,
+        category: String,
+        durationMinutes: Int,
+        headline: String,
+        description: String,
+        artwork: HomeArtworkStyle
+    ) {
+        self.id = id
+        self.category = category
+        self.durationMinutes = durationMinutes
+        self.headline = headline
+        self.description = description
+        self.artwork = artwork
     }
 }
 
@@ -39,7 +78,7 @@ struct HomeTopic: Identifiable {
 }
 
 enum HomeMockData {
-    static let categories = ["전체", "IT", "경제", "과학", "국제"]
+    static let categories = ["전체", "IT", "경제", "과학"]
 
     static func feedStories(for category: String) -> [HomeStory] {
         switch category {
