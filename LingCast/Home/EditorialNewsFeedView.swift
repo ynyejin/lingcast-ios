@@ -5,6 +5,7 @@
 //  Created by 윤예진 on 9/19/26.
 //
 
+
 import SwiftUI
 
 struct EditorialNewsFeedView: View {
@@ -13,9 +14,15 @@ struct EditorialNewsFeedView: View {
     var stories: [HomeStory]
     var selectedCategory: Binding<String>? = nil
 
+    // 뉴스 조회 상태
+    var isLoading: Bool = false
+    var errorMessage: String? = nil
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
+
+                // 카테고리 선택
                 if let selectedCategory {
                     CategoryFilterView(selectedCategory: selectedCategory)
                         .padding(.horizontal, HomeLayout.horizontalPadding)
@@ -28,12 +35,33 @@ struct EditorialNewsFeedView: View {
                         .padding(.horizontal, HomeLayout.horizontalPadding)
                 }
 
-                LazyVStack(spacing: 16) {
-                    ForEach(stories) { story in
-                        NewsFeedStoryCard(story: story)
+                // 뉴스 목록 상태에 따라 화면 표시
+                if isLoading {
+                    ProgressView("뉴스를 불러오는 중...")
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 60)
+
+                } else if let errorMessage {
+                    ContentUnavailableView(
+                        errorMessage,
+                        systemImage: "wifi.exclamationmark"
+                    )
+
+                } else if stories.isEmpty {
+                    ContentUnavailableView(
+                        "뉴스가 없습니다",
+                        systemImage: "newspaper",
+                        description: Text("해당 카테고리의 뉴스가 아직 없습니다.")
+                    )
+
+                } else {
+                    LazyVStack(spacing: 16) {
+                        ForEach(stories) { story in
+                            NewsFeedStoryCard(story: story)
+                        }
                     }
+                    .padding(.horizontal, HomeLayout.horizontalPadding)
                 }
-                .padding(.horizontal, HomeLayout.horizontalPadding)
             }
             .padding(.top, 8)
             .padding(.bottom, 32)
