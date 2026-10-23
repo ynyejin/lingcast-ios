@@ -1,14 +1,9 @@
-//
-//  PlayableEpisode.swift
-//  LingCast
-//
-//  Created by 윤예진 on 9/19/26.
-//
 
 import SwiftUI
 
 struct PlayableEpisode: Identifiable, Hashable {
     let id: String
+    let newsId: Int64?
     let category: String
     let headline: String
     let durationMinutes: Int
@@ -17,6 +12,7 @@ struct PlayableEpisode: Identifiable, Hashable {
 
     init(
         id: String,
+        newsId: Int64? = nil,
         category: String,
         headline: String,
         durationMinutes: Int,
@@ -24,6 +20,7 @@ struct PlayableEpisode: Identifiable, Hashable {
         artwork: HomeArtworkStyle
     ) {
         self.id = id
+        self.newsId = newsId
         self.category = category
         self.headline = headline
         self.durationMinutes = durationMinutes
@@ -31,9 +28,11 @@ struct PlayableEpisode: Identifiable, Hashable {
         self.artwork = artwork
     }
 
+    // Home에서 선택한 뉴스
     init(_ story: HomeStory) {
         self.init(
             id: story.id,
+            newsId: Int64(story.id),
             category: story.category,
             headline: story.headline,
             durationMinutes: story.durationMinutes,
@@ -42,6 +41,7 @@ struct PlayableEpisode: Identifiable, Hashable {
         )
     }
 
+    // Saved 콘텐츠 (현재 Mock)
     init(_ story: SavedStory) {
         self.init(
             id: story.id,
@@ -53,6 +53,7 @@ struct PlayableEpisode: Identifiable, Hashable {
         )
     }
 
+    // Learn 콘텐츠 (현재 Mock)
     init(_ item: RecentLearningItem) {
         self.init(
             id: item.id,
@@ -75,3 +76,4 @@ extension EnvironmentValues {
         set { self[PlayEpisodeKey.self] = newValue }
     }
 }
+

@@ -1,13 +1,8 @@
-//
-//  MiniPlayerView.swift
-//  LingCast
-//
-//  Created by 윤예진 on 9/19/26.
-//
 
 import SwiftUI
 
 struct MiniPlayerView: View {
+
     @Bindable var playback: PlaybackSession
 
     var body: some View {
@@ -20,30 +15,44 @@ struct MiniPlayerView: View {
                         HStack(spacing: 12) {
                             HomePlaceholderArtwork(style: episode.artwork)
                                 .frame(width: 40, height: 40)
-                                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                                .clipShape(
+                                    RoundedRectangle(
+                                        cornerRadius: 8,
+                                        style: .continuous
+                                    )
+                                )
 
                             Text(episode.headline)
                                 .font(.subheadline)
                                 .fontWeight(.semibold)
                                 .foregroundStyle(.white)
                                 .lineLimit(1)
-                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .frame(
+                                    maxWidth: .infinity,
+                                    alignment: .leading
+                                )
                         }
                     }
                     .buttonStyle(.plain)
 
                     Button {
-                        playback.isPlaying.toggle()
+                        playback.togglePlayback()
                     } label: {
-                        Image(systemName: playback.isPlaying ? "pause.fill" : "play.fill")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(.white)
-                            .offset(x: playback.isPlaying ? 0 : 1)
-                            .frame(width: 32, height: 32)
-                            .background(LingcastColor.accent, in: Circle())
+                        Image(
+                            systemName: playback.isPlaying
+                                ? "pause.fill"
+                                : "play.fill"
+                        )
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .offset(x: playback.isPlaying ? 0 : 1)
+                        .frame(width: 32, height: 32)
+                        .background(LingcastColor.accent, in: Circle())
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel(playback.isPlaying ? "일시정지" : "재생")
+                    .accessibilityLabel(
+                        playback.isPlaying ? "일시정지" : "재생"
+                    )
 
                     Button {
                         playback.stop()
@@ -67,14 +76,19 @@ struct MiniPlayerView: View {
 
                         Rectangle()
                             .fill(LingcastColor.accent)
-                            .frame(width: max(proxy.size.width * playback.progress, 0))
+                            .frame(
+                                width: max(
+                                    proxy.size.width * playback.progress,
+                                    0
+                                )
+                            )
                     }
                 }
                 .frame(height: 3)
             }
             .background(LingcastColor.darkSurface)
             .accessibilityElement(children: .contain)
-            .accessibilityAddTraits(.isButton)
         }
     }
 }
+

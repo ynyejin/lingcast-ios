@@ -1,9 +1,3 @@
-//
-//  APIClient.swift
-//  LingCast
-//
-//  Created by 윤예진 on 10/7/26.
-//
 
 import Foundation
 
@@ -19,7 +13,8 @@ final class APIClient {
     func request<T: Decodable>(
         endpoint: String,
         method: String = "GET",
-        body: Data? = nil
+        body: Data? = nil,
+        timeout: TimeInterval = 60
     ) async throws -> T {
 
         guard let url = URL(string: baseURL + endpoint) else {
@@ -29,6 +24,9 @@ final class APIClient {
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.httpBody = body
+
+        // 요청별 타임아웃 설정
+        request.timeoutInterval = timeout
 
         request.setValue(
             "application/json",
@@ -45,7 +43,9 @@ final class APIClient {
             )
         }
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await URLSession.shared.data(
+            for: request
+        )
 
         guard let httpResponse = response as? HTTPURLResponse else {
             throw URLError(.badServerResponse)
@@ -62,3 +62,4 @@ final class APIClient {
 enum APIError: Error {
     case serverError(Int)
 }
+
