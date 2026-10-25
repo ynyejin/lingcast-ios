@@ -1,4 +1,3 @@
-
 import SwiftUI
 
 struct PodcastPlayerView: View {
@@ -510,4 +509,3 @@ private struct PlayerWaveformView: View {
         )
     }
 }
-

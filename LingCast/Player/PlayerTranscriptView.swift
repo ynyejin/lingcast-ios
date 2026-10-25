@@ -1,4 +1,3 @@
-
 import SwiftUI
 
 struct PlayerTranscriptView: View {
@@ -25,7 +24,7 @@ struct PlayerTranscriptView: View {
                 .onAppear {
                     if sentences.indices.contains(currentIndex) {
                         proxy.scrollTo(
-                            currentIndex,
+                            sentences[currentIndex].id,
                             anchor: .center
                         )
                     }
@@ -49,9 +48,11 @@ struct PlayerTranscriptView: View {
         _ sentence: TranscriptSentence
     ) -> some View {
 
-        let isCurrent = sentence.id == currentIndex
+        let isCurrent = sentences.indices.contains(currentIndex)
+            && sentences[currentIndex].id == sentence.id
 
         return VStack(alignment: .leading, spacing: 10) {
+
             CaptionSentenceText(
                 sentence: sentence,
                 isActive: isCurrent,
@@ -67,15 +68,51 @@ struct PlayerTranscriptView: View {
                 }
             )
 
-            if expandedSentenceID == sentence.id,
-               !sentence.korean.isEmpty {
-                Text(sentence.korean)
-                    .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.72))
-                    .frame(
-                        maxWidth: .infinity,
-                        alignment: .leading
+            // 한국어 번역 보기 / 숨기기 버튼
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    expandedSentenceID =
+                        expandedSentenceID == sentence.id
+                            ? nil
+                            : sentence.id
+                }
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "character.book.closed")
+                        .font(.caption)
+
+                    Text(
+                        expandedSentenceID == sentence.id
+                            ? "번역 숨기기"
+                            : "번역 보기"
                     )
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                }
+                .foregroundStyle(.white.opacity(0.65))
+            }
+            .buttonStyle(.plain)
+
+            // 번역 표시
+            if expandedSentenceID == sentence.id {
+
+                let korean = sentence.korean.trimmingCharacters(
+                    in: .whitespacesAndNewlines
+                )
+
+                if korean.isEmpty {
+                    Text("한국어 번역을 준비하고 있습니다...")
+                        .font(.subheadline)
+                        .foregroundStyle(.white.opacity(0.5))
+                } else {
+                    Text(korean)
+                        .font(.subheadline)
+                        .foregroundStyle(.white.opacity(0.8))
+                        .frame(
+                            maxWidth: .infinity,
+                            alignment: .leading
+                        )
+                }
             }
         }
         .padding(16)
@@ -95,16 +132,6 @@ struct PlayerTranscriptView: View {
         .contentShape(Rectangle())
         .onTapGesture {
             onSelectSentence(sentence.id)
-
-            if !sentence.korean.isEmpty {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    expandedSentenceID =
-                        expandedSentenceID == sentence.id
-                            ? nil
-                            : sentence.id
-                }
-            }
         }
     }
 }
-

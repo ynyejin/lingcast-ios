@@ -35,6 +35,10 @@ final class PlaybackSession {
 
     @ObservationIgnored
     private var loadingTask: Task<Void, Never>?
+    
+    // 한국어 번역이 준비될 때까지 별도로 조회
+    @ObservationIgnored
+    private var translationTask: Task<Void, Never>?
 
     // MARK: - 팟캐스트 재생 준비
 
@@ -137,6 +141,16 @@ final class PlaybackSession {
             player?.play()
             isPlaying = true
 
+            // 영어 자막은 이미 준비되었으므로 재생은 바로 시작
+            // 한국어 번역이 아직 없다면 백그라운드에서 별도로 조회
+            if transcriptSentences.contains(where: {
+                $0.korean == nil || $0.korean?.isEmpty == true
+            }) {
+                translationTask = Task { [weak self] in
+                    await self?.waitForTranslations(podcastId: detail.podcastId)
+                }
+            }
+
             print("팟캐스트 상세 조회 성공")
             print("오디오 URL:", urlString)
 
@@ -217,6 +231,96 @@ final class PlaybackSession {
 
         throw PlaybackPreparationError.transcriptTimeout
     }
+    
+    // MARK: - 한국어 번역 준비 대기
+
+    private func waitForTranslations(podcastId: Int64) async {
+
+        // 3초 간격으로 최대 40회 확인
+        // 첫 조회는 즉시 실행
+        let maxAttempts = 40
+
+        for attempt in 1...maxAttempts {
+
+            guard !Task.isCancelled else { return }
+
+            // 다른 팟캐스트로 전환되었으면 종료
+            guard podcastDetail?.podcastId == podcastId else {
+                return
+            }
+
+            do {
+                let response = try await PodcastService.shared
+                    .getPodcastTranscript(podcastId: podcastId)
+
+                guard !Task.isCancelled,
+                      podcastDetail?.podcastId == podcastId else {
+                    return
+                }
+
+                // 문장 수가 동일한 경우에만 업데이트
+                guard !response.sentences.isEmpty,
+                      response.sentences.count == transcriptSentences.count,
+                      zip(response.sentences, transcriptSentences)
+                        .allSatisfy({
+                            $0.sentenceIndex == $1.sentenceIndex
+                        }) else {
+                    print("한국어 번역 조회: 자막 데이터 확인 중")
+                    if attempt < maxAttempts {
+                        try await Task.sleep(for: .seconds(3))
+                    }
+                    continue
+                }
+
+                // 영어 자막의 시간 정보는 유지하고
+                // 한국어 번역이 포함된 최신 응답으로 교체
+                transcriptSentences = response.sentences
+
+                let completed = response.sentences.allSatisfy {
+                    guard let korean = $0.korean else {
+                        return false
+                    }
+
+                    return !korean.trimmingCharacters(
+                        in: .whitespacesAndNewlines
+                    ).isEmpty
+                }
+
+                if completed {
+                    print(
+                        "한국어 번역 조회 완료:",
+                        response.sentences.count,
+                        "개"
+                    )
+                    return
+                }
+
+                print(
+                    "한국어 번역 준비 중:",
+                    attempt,
+                    "/",
+                    maxAttempts
+                )
+
+            } catch is CancellationError {
+                return
+
+            } catch {
+                print("한국어 번역 조회 오류:", error)
+            }
+
+            if attempt < maxAttempts {
+                do {
+                    try await Task.sleep(for: .seconds(3))
+                } catch {
+                    return
+                }
+            }
+        }
+
+        print("한국어 번역 조회 대기 종료 - 영어 자막 재생은 유지")
+    }
+
 
     // MARK: - AVPlayer 생성
 
@@ -352,6 +456,9 @@ final class PlaybackSession {
     func stop() {
         loadingTask?.cancel()
         loadingTask = nil
+
+        translationTask?.cancel()
+        translationTask = nil
 
         cleanupPlayer()
 
