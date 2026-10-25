@@ -16,6 +16,11 @@ final class PlaybackSession {
     var errorMessage: String?
     var podcastDetail: PodcastDetailResponse?
 
+    // WhisperX 자막
+    var transcriptSentences: [PodcastSentenceResponse] = []
+    var isTranscriptLoading = false
+    var transcriptErrorMessage: String?
+
     var currentTime: Double = 0
     var duration: Double = 0
 
@@ -31,7 +36,8 @@ final class PlaybackSession {
     @ObservationIgnored
     private var loadingTask: Task<Void, Never>?
 
-    // 뉴스 선택 및 팟캐스트 준비
+    // MARK: - 팟캐스트 재생 준비
+
     func play(_ episode: PlayableEpisode) {
         stop()
 
@@ -70,25 +76,19 @@ final class PlaybackSession {
             try Task.checkCancellation()
 
             guard detail.status == "COMPLETED" else {
-                errorMessage = "팟캐스트가 아직 준비되지 않았습니다."
-                isLoading = false
-                episode = nil
-                return
+                throw PlaybackPreparationError.notReady
             }
 
             guard let audioPath = detail.audioUrl,
                   !audioPath.isEmpty else {
-                errorMessage = "팟캐스트 음성 파일이 없습니다."
-                isLoading = false
-                episode = nil
-                return
+                throw PlaybackPreparationError.missingAudio
             }
 
             // 상대 경로를 전체 URL로 변환
             let urlString: String
 
             if audioPath.hasPrefix("http://") ||
-               audioPath.hasPrefix("https://") {
+                audioPath.hasPrefix("https://") {
                 urlString = audioPath
             } else {
                 let path = audioPath.hasPrefix("/")
@@ -99,14 +99,36 @@ final class PlaybackSession {
             }
 
             guard let url = URL(string: urlString) else {
-                errorMessage = "오디오 주소가 올바르지 않습니다."
-                isLoading = false
-                episode = nil
-                return
+                throw PlaybackPreparationError.invalidAudioURL
             }
 
             podcastDetail = detail
 
+            // 음성 생성 완료 후 WhisperX 자막 준비까지 대기
+            print("음성 준비 완료 - WhisperX 자막 대기 시작")
+
+            isTranscriptLoading = true
+            transcriptErrorMessage = nil
+
+            let sentences: [PodcastSentenceResponse]
+
+            do {
+                sentences = try await waitForTranscript(
+                    podcastId: detail.podcastId
+                )
+            } catch {
+                isTranscriptLoading = false
+                throw error
+            }
+
+            try Task.checkCancellation()
+
+            transcriptSentences = sentences
+            isTranscriptLoading = false
+
+            print("음성 및 자막 준비 완료 - 재생 시작")
+
+            // 자막이 준비된 후 플레이어 생성 및 재생
             setupPlayer(url: url)
 
             isLoading = false
@@ -120,18 +142,84 @@ final class PlaybackSession {
 
         } catch is CancellationError {
             return
+
         } catch {
             guard !Task.isCancelled else { return }
 
             isLoading = false
+            isTranscriptLoading = false
+            isPlaying = false
             episode = nil
-            errorMessage = "팟캐스트를 불러오지 못했습니다."
 
-            print("팟캐스트 API 오류:", error)
+            if let preparationError = error as? PlaybackPreparationError {
+                errorMessage = preparationError.localizedDescription
+            } else {
+                errorMessage = "팟캐스트를 불러오지 못했습니다."
+            }
+
+            print("팟캐스트 준비 오류:", error)
         }
     }
 
-    // AVPlayer 생성
+    // MARK: - WhisperX 자막 준비 대기
+
+    private func waitForTranscript(
+        podcastId: Int64
+    ) async throws -> [PodcastSentenceResponse] {
+
+        // 3초 간격, 최대 40회 조회
+        // 첫 조회는 즉시 실행
+        let maxAttempts = 40
+
+        for attempt in 1...maxAttempts {
+            try Task.checkCancellation()
+
+            do {
+                let response =
+                    try await PodcastService.shared.getPodcastTranscript(
+                        podcastId: podcastId
+                    )
+
+                try Task.checkCancellation()
+
+                guard podcastDetail?.podcastId == podcastId else {
+                    throw CancellationError()
+                }
+
+                if !response.sentences.isEmpty {
+                    print(
+                        "WhisperX 자막 조회 성공:",
+                        response.sentences.count,
+                        "개"
+                    )
+
+                    return response.sentences
+                }
+
+                print(
+                    "WhisperX 자막 준비 중:",
+                    attempt,
+                    "/",
+                    maxAttempts
+                )
+
+            } catch is CancellationError {
+                throw CancellationError()
+
+            } catch {
+                print("WhisperX 자막 조회 오류:", error)
+            }
+
+            if attempt < maxAttempts {
+                try await Task.sleep(for: .seconds(3))
+            }
+        }
+
+        throw PlaybackPreparationError.transcriptTimeout
+    }
+
+    // MARK: - AVPlayer 생성
+
     private func setupPlayer(url: URL) {
         cleanupPlayer()
 
@@ -140,9 +228,11 @@ final class PlaybackSession {
 
         player = newPlayer
 
-        // 재생 시간 및 진행률 관찰
         timeObserver = newPlayer.addPeriodicTimeObserver(
-            forInterval: CMTime(seconds: 0.5, preferredTimescale: 600),
+            forInterval: CMTime(
+                seconds: 0.5,
+                preferredTimescale: 600
+            ),
             queue: .main
         ) { [weak self] time in
             Task { @MainActor [weak self] in
@@ -168,7 +258,6 @@ final class PlaybackSession {
             }
         }
 
-        // 재생 완료 감지
         endObserver = NotificationCenter.default.addObserver(
             forName: .AVPlayerItemDidPlayToEndTime,
             object: item,
@@ -184,7 +273,8 @@ final class PlaybackSession {
         }
     }
 
-    // 재생 / 일시정지
+    // MARK: - 재생 / 일시정지
+
     func togglePlayback() {
         guard let player else { return }
 
@@ -192,7 +282,8 @@ final class PlaybackSession {
             player.pause()
             isPlaying = false
         } else {
-            if duration > 0 && currentTime >= duration - 0.1 {
+            if duration > 0 &&
+                currentTime >= duration - 0.1 {
                 seek(to: 0)
             }
 
@@ -201,7 +292,8 @@ final class PlaybackSession {
         }
     }
 
-    // 특정 시간으로 이동
+    // MARK: - 특정 시간으로 이동
+
     func seek(to seconds: Double) {
         guard let player else { return }
 
@@ -221,12 +313,14 @@ final class PlaybackSession {
         }
     }
 
-    // 15초 이동
+    // MARK: - 15초 이동
+
     func skip(seconds: Double) {
         seek(to: currentTime + seconds)
     }
 
-    // 진행률로 이동
+    // MARK: - 진행률로 이동
+
     func seek(toProgress value: Double) {
         guard duration > 0 else { return }
 
@@ -234,7 +328,8 @@ final class PlaybackSession {
         seek(to: duration * ratio)
     }
 
-    // 플레이어 정리
+    // MARK: - 플레이어 정리
+
     private func cleanupPlayer() {
         player?.pause()
 
@@ -252,7 +347,8 @@ final class PlaybackSession {
         player = nil
     }
 
-    // 재생 종료
+    // MARK: - 재생 종료
+
     func stop() {
         loadingTask?.cancel()
         loadingTask = nil
@@ -262,6 +358,10 @@ final class PlaybackSession {
         episode = nil
         podcastDetail = nil
 
+        transcriptSentences = []
+        isTranscriptLoading = false
+        transcriptErrorMessage = nil
+
         isPlaying = false
         progress = 0
         currentTime = 0
@@ -270,6 +370,31 @@ final class PlaybackSession {
         isPlayerPresented = false
         isLoading = false
         errorMessage = nil
+    }
+}
+
+// MARK: - 팟캐스트 준비 오류
+
+private enum PlaybackPreparationError: LocalizedError {
+    case notReady
+    case missingAudio
+    case invalidAudioURL
+    case transcriptTimeout
+
+    var errorDescription: String? {
+        switch self {
+        case .notReady:
+            return "팟캐스트가 아직 준비되지 않았습니다."
+
+        case .missingAudio:
+            return "팟캐스트 음성 파일이 없습니다."
+
+        case .invalidAudioURL:
+            return "오디오 주소가 올바르지 않습니다."
+
+        case .transcriptTimeout:
+            return "자막 생성 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요."
+        }
     }
 }
 

@@ -6,32 +6,68 @@ struct PodcastPlayerView: View {
     let episode: PlayableEpisode
     @Bindable var playback: PlaybackSession
 
-    @Environment(\.dismiss) private var dismiss
-
     @State private var captionsEnabled = true
-    @State private var currentIndex = 1
     @State private var showingTranscript = false
     @State private var selectedWord: WordDefinition?
 
-    // 자막은 아직 Mock 데이터 사용
+    // MARK: - WhisperX 자막
+
     private var sentences: [TranscriptSentence] {
-        PlayerMockData.sentences(for: episode)
+        playback.transcriptSentences.map {
+            $0.toTranscriptSentence()
+        }
     }
 
-    private var currentSentence: TranscriptSentence {
-        sentences[min(currentIndex, sentences.count - 1)]
+    private var safeCurrentIndex: Int {
+        let items = playback.transcriptSentences
+
+        guard !items.isEmpty else { return 0 }
+
+        let currentMs = Int64(playback.currentTime * 1000)
+
+        if let index = items.firstIndex(where: {
+            currentMs >= $0.startMs &&
+            currentMs < $0.endMs
+        }) {
+            return index
+        }
+
+        // 문장 사이의 공백에서는 직전 문장 유지
+        if let index = items.lastIndex(where: {
+            currentMs >= $0.startMs
+        }) {
+            return index
+        }
+
+        return 0
+    }
+
+    private var currentSentence: TranscriptSentence? {
+        guard sentences.indices.contains(safeCurrentIndex) else {
+            return nil
+        }
+
+        return sentences[safeCurrentIndex]
     }
 
     private var previousSentence: TranscriptSentence? {
-        guard currentIndex > 0 else { return nil }
-        return sentences[currentIndex - 1]
+        let index = safeCurrentIndex - 1
+
+        guard sentences.indices.contains(index) else {
+            return nil
+        }
+
+        return sentences[index]
     }
 
     private var nextSentence: TranscriptSentence? {
-        guard currentIndex < sentences.count - 1 else {
+        let index = safeCurrentIndex + 1
+
+        guard sentences.indices.contains(index) else {
             return nil
         }
-        return sentences[currentIndex + 1]
+
+        return sentences[index]
     }
 
     private var elapsedText: String {
@@ -42,25 +78,33 @@ struct PodcastPlayerView: View {
         timeString(Int(playback.duration))
     }
 
+    // MARK: - Body
+
     var body: some View {
         ZStack {
             background
 
-            VStack(alignment: .leading, spacing: 28) {
+            VStack(alignment: .leading, spacing: 0) {
                 header
+
+                Spacer(minLength: 12)
 
                 if captionsEnabled {
                     captionBlock
+                        .frame(
+                            maxWidth: .infinity,
+                            maxHeight: .infinity
+                        )
+                        .clipped()
                 } else {
-                    Spacer(minLength: 80)
+                    Spacer()
                 }
 
-                Spacer()
-
                 controls
+                    .padding(.top, 20)
+                    .padding(.bottom, 28)
             }
             .padding(.horizontal, 24)
-            .padding(.bottom, 28)
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.visible, for: .navigationBar)
@@ -81,7 +125,9 @@ struct PodcastPlayerView: View {
 
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
-                    captionsEnabled.toggle()
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        captionsEnabled.toggle()
+                    }
                 } label: {
                     Image(
                         systemName: captionsEnabled
@@ -98,8 +144,22 @@ struct PodcastPlayerView: View {
         .sheet(isPresented: $showingTranscript) {
             PlayerTranscriptView(
                 sentences: sentences,
-                currentIndex: currentIndex,
-                onSelectSentence: { currentIndex = $0 },
+                currentIndex: safeCurrentIndex,
+                onSelectSentence: { sentenceIndex in
+                    guard let sentence =
+                        playback.transcriptSentences.first(
+                            where: {
+                                $0.sentenceIndex == sentenceIndex
+                            }
+                        )
+                    else {
+                        return
+                    }
+
+                    playback.seek(
+                        to: Double(sentence.startMs) / 1000.0
+                    )
+                },
                 onWordTap: { selectedWord = $0 }
             )
         }
@@ -161,35 +221,111 @@ struct PodcastPlayerView: View {
     // MARK: - Caption
 
     private var captionBlock: some View {
+        GeometryReader { geometry in
+            VStack(alignment: .leading, spacing: 0) {
+                Spacer(minLength: 0)
+
+                ZStack(alignment: .leading) {
+                    if sentences.isEmpty {
+                        Text(
+                            playback.isTranscriptLoading
+                                ? "자막을 준비하고 있습니다..."
+                                : (playback.transcriptErrorMessage
+                                    ?? "표시할 자막이 없습니다.")
+                        )
+                        .font(.title3)
+                        .foregroundStyle(.white.opacity(0.6))
+                        .frame(
+                            maxWidth: .infinity,
+                            alignment: .leading
+                        )
+                    } else {
+                        captionPage
+                            .id(currentSentence?.id ?? -1)
+                            .transition(
+                                .asymmetric(
+                                    insertion: .offset(y: 35)
+                                        .combined(with: .opacity),
+                                    removal: .offset(y: -35)
+                                        .combined(with: .opacity)
+                                )
+                            )
+                    }
+                }
+                .frame(
+                    maxWidth: .infinity,
+                    maxHeight: min(
+                        geometry.size.height * 0.85,
+                        420
+                    ),
+                    alignment: .center
+                )
+                .clipped()
+                .animation(
+                    .easeInOut(duration: 0.45),
+                    value: safeCurrentIndex
+                )
+
+                Spacer(minLength: 0)
+            }
+            .frame(
+                width: geometry.size.width,
+                height: geometry.size.height
+            )
+        }
+    }
+
+    private var captionPage: some View {
         VStack(alignment: .leading, spacing: 18) {
 
+            // 이전 문장
             if let previousSentence {
                 Text(previousSentence.english)
                     .font(.body)
                     .fontWeight(.medium)
                     .foregroundStyle(.white.opacity(0.32))
                     .lineLimit(2)
+                    .frame(
+                        maxWidth: .infinity,
+                        alignment: .leading
+                    )
             }
 
-            CaptionSentenceText(
-                sentence: currentSentence,
-                isActive: true,
-                showsSpokenWord: false,
-                font: .title,
-                onWordTap: { word in
-                    selectedWord = PlayerMockData.definition(
-                        for: word,
-                        contextSentence: currentSentence.english
+            // 현재 문장
+            if let currentSentence {
+                ScrollView(.vertical) {
+                    CaptionSentenceText(
+                        sentence: currentSentence,
+                        isActive: true,
+                        showsSpokenWord: false,
+                        font: .title,
+                        onWordTap: { word in
+                            selectedWord = PlayerMockData.definition(
+                                for: word,
+                                contextSentence: currentSentence.english
+                            )
+                        }
+                    )
+                    .frame(
+                        maxWidth: .infinity,
+                        alignment: .leading
                     )
                 }
-            )
+                .scrollIndicators(.hidden)
+                .frame(maxHeight: 240)
+            }
 
+            // 다음 문장
             if let nextSentence {
                 Text(nextSentence.english)
                     .font(.body)
                     .fontWeight(.medium)
                     .foregroundStyle(.white.opacity(0.32))
                     .lineLimit(2)
+                    .frame(
+                        maxWidth: .infinity,
+                        alignment: .leading
+                    )
             }
 
             Button {
@@ -201,7 +337,10 @@ struct PodcastPlayerView: View {
             }
             .buttonStyle(.plain)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(
+            maxWidth: .infinity,
+            alignment: .leading
+        )
     }
 
     // MARK: - Controls
@@ -211,6 +350,7 @@ struct PodcastPlayerView: View {
 
             PlayerWaveformView(progress: playback.progress) {
                 newProgress in
+
                 playback.seek(toProgress: newProgress)
             }
 
@@ -223,7 +363,11 @@ struct PodcastPlayerView: View {
                 Text(durationText)
                     .foregroundStyle(.white.opacity(0.35))
             }
-            .font(.subheadline.monospacedDigit().weight(.medium))
+            .font(
+                .subheadline
+                    .monospacedDigit()
+                    .weight(.medium)
+            )
 
             HStack(spacing: 36) {
 
@@ -266,6 +410,7 @@ struct PodcastPlayerView: View {
             .buttonStyle(.plain)
             .frame(maxWidth: .infinity)
         }
+        .fixedSize(horizontal: false, vertical: true)
     }
 
     // MARK: - Helpers
@@ -301,9 +446,10 @@ private struct PlayerWaveformView: View {
             let spacing: CGFloat = 3
 
             let barWidth = max(
-                (proxy.size.width
-                    - spacing * CGFloat(barCount - 1))
-                    / CGFloat(barCount),
+                (
+                    proxy.size.width
+                    - spacing * CGFloat(barCount - 1)
+                ) / CGFloat(barCount),
                 2
             )
 

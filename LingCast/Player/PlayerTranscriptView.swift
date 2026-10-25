@@ -1,13 +1,8 @@
-//
-//  PlayerTranscriptView.swift
-//  LingCast
-//
-//  Created by 윤예진 on 9/19/26.
-//
 
 import SwiftUI
 
 struct PlayerTranscriptView: View {
+
     let sentences: [TranscriptSentence]
     let currentIndex: Int
     var onSelectSentence: (Int) -> Void
@@ -28,51 +23,88 @@ struct PlayerTranscriptView: View {
                     .padding(20)
                 }
                 .onAppear {
-                    proxy.scrollTo(currentIndex, anchor: .center)
+                    if sentences.indices.contains(currentIndex) {
+                        proxy.scrollTo(
+                            currentIndex,
+                            anchor: .center
+                        )
+                    }
                 }
             }
-            .background(LingcastColor.darkSurface.ignoresSafeArea())
+            .background(
+                LingcastColor.darkSurface.ignoresSafeArea()
+            )
             .navigationTitle("Transcript")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(LingcastColor.darkSurface, for: .navigationBar)
+            .toolbarBackground(
+                LingcastColor.darkSurface,
+                for: .navigationBar
+            )
             .toolbarColorScheme(.dark, for: .navigationBar)
         }
         .presentationDetents([.large])
     }
 
-    private func transcriptRow(_ sentence: TranscriptSentence) -> some View {
+    private func transcriptRow(
+        _ sentence: TranscriptSentence
+    ) -> some View {
+
         let isCurrent = sentence.id == currentIndex
 
         return VStack(alignment: .leading, spacing: 10) {
             CaptionSentenceText(
                 sentence: sentence,
                 isActive: isCurrent,
-                showsSpokenWord: isCurrent,
+                showsSpokenWord: false,
                 font: .title3,
                 onWordTap: { word in
-                    onWordTap(PlayerMockData.definition(for: word, contextSentence: sentence.english))
+                    onWordTap(
+                        PlayerMockData.definition(
+                            for: word,
+                            contextSentence: sentence.english
+                        )
+                    )
                 }
             )
 
-            if expandedSentenceID == sentence.id {
+            if expandedSentenceID == sentence.id,
+               !sentence.korean.isEmpty {
                 Text(sentence.korean)
                     .font(.subheadline)
                     .foregroundStyle(.white.opacity(0.72))
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(
+                        maxWidth: .infinity,
+                        alignment: .leading
+                    )
             }
         }
         .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(
+            maxWidth: .infinity,
+            alignment: .leading
+        )
         .background(
-            isCurrent ? LingcastColor.accent.opacity(0.16) : Color.white.opacity(0.05),
-            in: RoundedRectangle(cornerRadius: 18, style: .continuous)
+            isCurrent
+                ? LingcastColor.accent.opacity(0.16)
+                : Color.white.opacity(0.05),
+            in: RoundedRectangle(
+                cornerRadius: 18,
+                style: .continuous
+            )
         )
         .contentShape(Rectangle())
         .onTapGesture {
             onSelectSentence(sentence.id)
-            withAnimation(.easeInOut(duration: 0.2)) {
-                expandedSentenceID = expandedSentenceID == sentence.id ? nil : sentence.id
+
+            if !sentence.korean.isEmpty {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    expandedSentenceID =
+                        expandedSentenceID == sentence.id
+                            ? nil
+                            : sentence.id
+                }
             }
         }
     }
 }
+

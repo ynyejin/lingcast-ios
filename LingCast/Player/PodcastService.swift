@@ -34,5 +34,20 @@ final class PodcastService {
 
         return response.data
     }
+    
+    // 팟캐스트 문장별 자막 조회
+    func getPodcastTranscript(
+        podcastId: Int64
+    ) async throws -> PodcastTranscriptResponse {
+
+        let endpoint = "/api/v1/podcasts/\(podcastId)/transcript"
+
+        let response: APIResponse<PodcastTranscriptResponse> =
+            try await APIClient.shared.request(
+                endpoint: endpoint
+            )
+
+        return response.data
+    }
 }
 
