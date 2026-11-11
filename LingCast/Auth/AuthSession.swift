@@ -1,13 +1,7 @@
-//
-//  AuthSession.swift
-//  LingCast
-//
-//  Created by 윤예진 on 10/7/26.
-//
-
 import Foundation
 import Observation
 
+@MainActor
 @Observable
 final class AuthSession {
 
@@ -15,18 +9,24 @@ final class AuthSession {
     var isLoading = false
     var errorMessage: String?
 
+    init() {
+        if let accessToken = UserDefaults.standard.string(
+            forKey: "accessToken"
+        ), !accessToken.isEmpty {
+            isLoggedIn = true
+        }
+    }
+
     func logIn(email: String, password: String) async {
         isLoading = true
         errorMessage = nil
 
         do {
-            // 백엔드 로그인 API 호출
             let response = try await AuthService.shared.login(
                 email: email,
                 password: password
             )
 
-            // 로그인 성공 시 토큰 저장
             UserDefaults.standard.set(
                 response.accessToken,
                 forKey: "accessToken"
@@ -36,16 +36,40 @@ final class AuthSession {
                 response.refreshToken,
                 forKey: "refreshToken"
             )
-            
+
             isLoggedIn = true
 
         } catch {
-            // 로그인 실패
             errorMessage = "이메일 또는 비밀번호를 확인해주세요."
             isLoggedIn = false
+
             print("로그인 실패:", error)
         }
 
         isLoading = false
+    }
+
+    // 사용자가 직접 로그아웃
+    func logOut() {
+        clearSession()
+    }
+
+    // Refresh Token 만료 등으로 인증이 종료된 경우
+    func handleAuthenticationExpired() {
+        clearSession()
+        errorMessage = "로그인 세션이 만료되었습니다. 다시 로그인해주세요."
+    }
+
+    private func clearSession() {
+        UserDefaults.standard.removeObject(
+            forKey: "accessToken"
+        )
+
+        UserDefaults.standard.removeObject(
+            forKey: "refreshToken"
+        )
+
+        errorMessage = nil
+        isLoggedIn = false
     }
 }

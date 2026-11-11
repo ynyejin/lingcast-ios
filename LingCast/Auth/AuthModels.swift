@@ -13,14 +13,6 @@ struct LoginRequest: Encodable {
     let password: String
 }
 
-// 공통 API 응답
-struct APIResponse<T: Decodable>: Decodable {
-    let success: Bool
-    let data: T
-    let message: String
-    let code: String?
-}
-
 // 로그인 응답 데이터
 struct LoginResponse: Decodable {
     let accessToken: String

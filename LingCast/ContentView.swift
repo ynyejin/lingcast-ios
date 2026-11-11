@@ -1,13 +1,7 @@
-//
-//  ContentView.swift
-//  LingCast
-//
-//  Created by 윤예진 on 9/11/26.
-//
-
 import SwiftUI
 
 struct ContentView: View {
+
     @State private var auth = AuthSession()
 
     var body: some View {
@@ -21,6 +15,13 @@ struct ContentView: View {
             }
         }
         .environment(auth)
+        .onReceive(
+            NotificationCenter.default.publisher(
+                for: APIClient.authenticationExpired
+            )
+        ) { _ in
+            auth.handleAuthenticationExpired()
+        }
     }
 }
 
