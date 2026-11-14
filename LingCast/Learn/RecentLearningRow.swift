@@ -83,7 +83,11 @@ struct RecentLearningRow: View {
     private var statusText: String {
         switch item.status {
         case .completed(let quizScore):
-            return "청취 완료 · 퀴즈 \(quizScore)"
+            if let quizScore {
+                return "청취 완료 · 퀴즈 \(quizScore)"
+            }
+            return "청취 완료"
+
         case .inProgress(let percent):
             return "청취 \(percent)% · 이어 듣기"
         }

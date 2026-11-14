@@ -4,6 +4,7 @@ import SwiftUI
 struct PlayableEpisode: Identifiable, Hashable {
     let id: String
     let newsId: Int64?
+    let podcastId: Int64?
     let category: String
     let headline: String
     let durationMinutes: Int
@@ -13,6 +14,7 @@ struct PlayableEpisode: Identifiable, Hashable {
     init(
         id: String,
         newsId: Int64? = nil,
+        podcastId: Int64? = nil,
         category: String,
         headline: String,
         durationMinutes: Int,
@@ -21,12 +23,15 @@ struct PlayableEpisode: Identifiable, Hashable {
     ) {
         self.id = id
         self.newsId = newsId
+        self.podcastId = podcastId
         self.category = category
         self.headline = headline
         self.durationMinutes = durationMinutes
         self.description = description
         self.artwork = artwork
     }
+
+    // MARK: - Home 콘텐츠
 
     // Home에서 선택한 뉴스
     init(_ story: HomeStory) {
@@ -41,6 +46,8 @@ struct PlayableEpisode: Identifiable, Hashable {
         )
     }
 
+    // MARK: - Saved 콘텐츠
+
     // Saved 콘텐츠 (현재 Mock)
     init(_ story: SavedStory) {
         self.init(
@@ -53,10 +60,13 @@ struct PlayableEpisode: Identifiable, Hashable {
         )
     }
 
-    // Learn 콘텐츠 (현재 Mock)
+    // MARK: - Learn 콘텐츠
+
+    // 최근 학습한 팟캐스트
     init(_ item: RecentLearningItem) {
         self.init(
             id: item.id,
+            podcastId: item.podcastId,
             category: item.category,
             headline: item.title,
             durationMinutes: item.durationMinutes,
@@ -65,6 +75,8 @@ struct PlayableEpisode: Identifiable, Hashable {
         )
     }
 }
+
+// MARK: - 재생 환경값
 
 private struct PlayEpisodeKey: EnvironmentKey {
     static let defaultValue: (PlayableEpisode) -> Void = { _ in }

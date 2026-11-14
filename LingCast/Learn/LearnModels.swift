@@ -16,12 +16,13 @@ struct WeeklyLearningSummary {
 }
 
 enum RecentLearningStatus {
-    case completed(quizScore: String)
+    case completed(quizScore: String?)
     case inProgress(percent: Int)
 }
 
 struct RecentLearningItem: Identifiable {
     let id: String
+    let podcastId: Int64?
     let category: String
     let level: String
     let artworkLabel: String
@@ -29,6 +30,86 @@ struct RecentLearningItem: Identifiable {
     let durationMinutes: Int
     let artwork: HomeArtworkStyle
     let status: RecentLearningStatus
+
+    init(
+        id: String,
+        podcastId: Int64? = nil,
+        category: String,
+        level: String,
+        artworkLabel: String,
+        title: String,
+        durationMinutes: Int,
+        artwork: HomeArtworkStyle,
+        status: RecentLearningStatus
+    ) {
+        self.id = id
+        self.podcastId = podcastId
+        self.category = category
+        self.level = level
+        self.artworkLabel = artworkLabel
+        self.title = title
+        self.durationMinutes = durationMinutes
+        self.artwork = artwork
+        self.status = status
+    }
+}
+
+extension RecentLearningItem {
+
+    init(history: PodcastHistoryResponse) {
+
+        let durationSec = max(history.durationSec ?? 0, 0)
+        let progressSec = max(history.progressSec ?? 0, 0)
+
+        let percent: Int
+
+        if durationSec > 0 {
+            percent = min(
+                Int(Double(progressSec) / Double(durationSec) * 100),
+                100
+            )
+        } else {
+            percent = 0
+        }
+
+        let status: RecentLearningStatus =
+            history.completed
+                ? .completed(quizScore: nil)
+                : .inProgress(percent: percent)
+
+        let artwork: HomeArtworkStyle
+        let artworkLabel: String
+
+        switch history.category.uppercased() {
+        case "TECHNOLOGY":
+            artwork = .technology
+            artworkLabel = "TECH"
+        case "WORLD":
+            artwork = .worldNews
+            artworkLabel = "WORLD"
+        case "BUSINESS":
+            artwork = .markets
+            artworkLabel = "ECO"
+        case "SCIENCE":
+            artwork = .science
+            artworkLabel = "SCI"
+        default:
+            artwork = .worldNews
+            artworkLabel = "NEWS"
+        }
+
+        self.init(
+            id: "podcast-\(history.podcastId)",
+            podcastId: history.podcastId,
+            category: history.category,
+            level: history.englishLevel,
+            artworkLabel: artworkLabel,
+            title: history.title,
+            durationMinutes: Int(ceil(Double(durationSec) / 60.0)),
+            artwork: artwork,
+            status: status
+        )
+    }
 }
 
 struct ReviewPrompt: Identifiable {

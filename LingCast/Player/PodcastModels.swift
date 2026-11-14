@@ -53,3 +53,29 @@ extension PodcastSentenceResponse {
         )
     }
 }
+
+// MARK: - 팟캐스트 학습 기록
+
+struct PodcastHistoryResponse: Decodable {
+   let podcastId: Int64
+   let title: String
+   let category: String
+   let englishLevel: String
+   let durationSec: Int?
+   let progressSec: Int?
+   let completed: Bool
+   let lastListenedAt: String?
+}
+
+// MARK: - 학습 기록 페이지 응답
+
+struct PodcastHistoryPageResponse: Decodable {
+   let content: [PodcastHistoryResponse]
+   let totalPages: Int
+   let totalElements: Int
+   let number: Int
+   let size: Int
+   let first: Bool
+   let last: Bool
+}
+
