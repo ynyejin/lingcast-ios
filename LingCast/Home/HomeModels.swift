@@ -42,12 +42,33 @@ struct HomeStory: Identifiable {
         self.description = news.summary ?? ""
 
         switch news.category {
-        case "IT":
+        case "TECH":
             self.artwork = .technology
-        case "경제":
+
+        case "BUSINESS":
             self.artwork = .business
-        case "과학":
+
+        case "SCIENCE":
             self.artwork = .science
+
+        case "HEALTH":
+            self.artwork = .science
+
+        case "DESIGN":
+            self.artwork = .technology
+
+        case "MARKETING":
+            self.artwork = .business
+
+        case "EDUCATION":
+            self.artwork = .science
+
+        case "LAW":
+            self.artwork = .business
+
+        case "ENVIRONMENT":
+            self.artwork = .world
+
         default:
             self.artwork = .world
         }
@@ -78,7 +99,19 @@ struct HomeTopic: Identifiable {
 }
 
 enum HomeMockData {
-    static let categories = ["전체", "IT", "경제", "과학"]
+    
+    static let categories = [
+        "All",
+        "Tech",
+        "Business",
+        "Health",
+        "Science",
+        "Design",
+        "Marketing",
+        "Education",
+        "Law",
+        "Environment"
+    ]
 
     static func feedStories(for category: String) -> [HomeStory] {
         switch category {
@@ -146,10 +179,51 @@ enum HomeMockData {
     ]
 
     static let topics: [HomeTopic] = [
-        HomeTopic(id: "topic-technology", name: "Technology", artwork: .technology),
-        HomeTopic(id: "topic-business", name: "Business", artwork: .business),
-        HomeTopic(id: "topic-science", name: "Science", artwork: .science),
-        HomeTopic(id: "topic-world", name: "World", artwork: .world)
+        HomeTopic(
+            id: "topic-tech",
+            name: "Tech",
+            artwork: .technology
+        ),
+        HomeTopic(
+            id: "topic-business",
+            name: "Business",
+            artwork: .business
+        ),
+        HomeTopic(
+            id: "topic-health",
+            name: "Health",
+            artwork: .science
+        ),
+        HomeTopic(
+            id: "topic-science",
+            name: "Science",
+            artwork: .science
+        ),
+        HomeTopic(
+            id: "topic-design",
+            name: "Design",
+            artwork: .technology
+        ),
+        HomeTopic(
+            id: "topic-marketing",
+            name: "Marketing",
+            artwork: .business
+        ),
+        HomeTopic(
+            id: "topic-education",
+            name: "Education",
+            artwork: .science
+        ),
+        HomeTopic(
+            id: "topic-law",
+            name: "Law",
+            artwork: .business
+        ),
+        HomeTopic(
+            id: "topic-environment",
+            name: "Environment",
+            artwork: .world
+        )
     ]
 
     private static let mixedFeatured: [HomeStory] = [
