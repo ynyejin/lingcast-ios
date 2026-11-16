@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct HomeView: View {
+    @Environment(AuthSession.self) private var auth
+    
     @State private var selectedCategory = HomeMockData.categories[0]
     @State private var featuredStoryID: String?
 
@@ -28,7 +30,7 @@ struct HomeView: View {
                     alignment: .leading,
                     spacing: HomeLayout.sectionSpacing
                 ) {
-                    HomeHeaderView()
+                    HomeHeaderView(nickname: auth.nickname ?? "회원")
                         .padding(.horizontal, HomeLayout.horizontalPadding)
 
                     featuredNewsSection
@@ -272,4 +274,5 @@ struct HomeView: View {
 
 #Preview {
     HomeView()
+        .environment(AuthSession())
 }

@@ -1,21 +1,9 @@
-//
-//  RegisterView.swift
-//  LingCast
-//
-//  Created by 윤예진 on 10/7/26.
-//
-
-//
-//  RegisterView.swift
-//  LingCast
-//
-//  Created by 윤예진 on 10/7/26.
-//
 
 import SwiftUI
 
 struct RegisterView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(AuthSession.self) private var auth
 
     @State private var nickname = ""
     @State private var email = ""
@@ -116,39 +104,52 @@ struct RegisterView: View {
     private func signup() async {
         errorMessage = nil
 
-        // 모든 항목 입력 여부 확인
-        guard !nickname.isEmpty,
-              !email.isEmpty,
+        let trimmedNickname = nickname.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !trimmedNickname.isEmpty,
+              !trimmedEmail.isEmpty,
               !password.isEmpty,
               !confirmPassword.isEmpty else {
             errorMessage = "모든 항목을 입력해주세요."
             return
         }
 
-        // 비밀번호 일치 여부 확인
         guard password == confirmPassword else {
             errorMessage = "비밀번호가 일치하지 않습니다."
             return
         }
 
         isLoading = true
+        defer { isLoading = false }
 
         do {
+            // 1. 회원가입
             _ = try await AuthService.shared.signup(
-                email: email,
+                email: trimmedEmail,
                 password: password,
-                nickname: nickname
+                nickname: trimmedNickname
             )
-
-            // 회원가입 성공 시 로그인 화면으로 돌아가기
-            dismiss()
 
         } catch {
             errorMessage = "회원가입에 실패했습니다."
             print("회원가입 실패:", error)
+            return
         }
 
-        isLoading = false
+        // 2. 회원가입 성공 후 자동 로그인
+        await auth.logIn(
+            email: trimmedEmail,
+            password: password
+        )
+
+        // 3. 자동 로그인 실패 시 안내
+        if !auth.isLoggedIn {
+            errorMessage = "회원가입은 완료되었지만 자동 로그인에 실패했습니다. 로그인 화면에서 다시 시도해주세요."
+            return
+        }
+
+        // 로그인 성공 시 ContentView가 자동으로 화면을 전환함
     }
 }
 

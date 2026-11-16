@@ -1,13 +1,10 @@
-//
-//  HomeHeaderView.swift
-//  LingCast
-//
-//  Created by 윤예진 on 9/18/26.
-//
 
 import SwiftUI
 
 struct HomeHeaderView: View {
+
+    let nickname: String
+
     var body: some View {
         HStack(alignment: .center, spacing: 16) {
             VStack(alignment: .leading, spacing: 6) {
@@ -16,7 +13,7 @@ struct HomeHeaderView: View {
                     .fontWeight(.medium)
                     .foregroundStyle(LingcastColor.secondaryText)
 
-                Text("좋은 아침이에요, Alex")
+                Text("좋은 아침이에요, \(nickname)")
                     .font(.title)
                     .fontWeight(.bold)
                     .foregroundStyle(LingcastColor.primaryText)
@@ -46,7 +43,8 @@ struct HomeHeaderView: View {
 }
 
 #Preview {
-    HomeHeaderView()
+    HomeHeaderView(nickname: "Alex")
         .padding()
         .background(LingcastColor.background)
 }
+

@@ -15,7 +15,13 @@ struct ProfileView: View {
             ) {
                 ProfileHeaderView()
 
-                ProfileUserCard(user: ProfileMockData.user)
+                ProfileUserCard(
+                    user: ProfileUser(
+                        name: auth.nickname ?? "회원",
+                        subtitle: "개인 맞춤 뉴스 팟캐스트",
+                        initial: String((auth.nickname ?? "회").prefix(1))
+                    )
+                )
 
                 ProfileLevelSelector(
                     selectedLevel: $selectedLevel
