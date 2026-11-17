@@ -70,6 +70,17 @@ struct HomeView: View {
             .task {
                 await loadRecommendedNews()
             }
+            
+            // 관심 분야 변경 시 추천 뉴스 다시 조회
+            .onReceive(
+                NotificationCenter.default.publisher(
+                    for: .lingcastPreferencesUpdated
+                )
+            ) { _ in
+                Task {
+                    await loadRecommendedNews()
+                }
+            }
         }
     }
 
@@ -249,6 +260,7 @@ struct HomeView: View {
     private func loadRecommendedNews() async {
         isLoadingRecommended = true
         recommendedErrorMessage = nil
+        recommendedStories = []
 
         do {
             let response = try await NewsService.shared.getRecommendedNews()

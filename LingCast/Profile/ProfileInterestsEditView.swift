@@ -1,6 +1,11 @@
 
 import SwiftUI
 
+extension Notification.Name {
+    static let lingcastPreferencesUpdated =
+        Notification.Name("lingcastPreferencesUpdated")
+}
+
 struct ProfileInterestsEditView: View {
 
     @Environment(\.dismiss) private var dismiss
@@ -162,6 +167,12 @@ struct ProfileInterestsEditView: View {
             )
 
             onSave(updatedCategories)
+
+            NotificationCenter.default.post(
+                name: .lingcastPreferencesUpdated,
+                object: nil
+            )
+
             dismiss()
 
         } catch {
