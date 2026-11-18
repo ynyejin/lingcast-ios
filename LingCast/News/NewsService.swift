@@ -75,5 +75,15 @@ final class NewsService {
 
         return response.data
     }
+    
+    // 뉴스 상세 조회
+    func getNewsDetail(newsId: Int64) async throws -> NewsDetailResponse {
+        let response: APIResponse<NewsDetailResponse> =
+            try await APIClient.shared.request(
+                endpoint: "/api/v1/news/\(newsId)"
+            )
+
+        return response.data
+    }
 }
 

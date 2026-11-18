@@ -1,14 +1,8 @@
-//
-//  FeaturedStoryCard.swift
-//  LingCast
-//
-//  Created by 윤예진 on 9/18/26.
-//
-
 import SwiftUI
 
 struct FeaturedStoryCard: View {
     let story: HomeStory
+
     @Environment(\.playEpisode) private var playEpisode
 
     var body: some View {
@@ -24,6 +18,18 @@ struct FeaturedStoryCard: View {
                 startPoint: .top,
                 endPoint: .bottom
             )
+
+            // 카드 클릭 영역 (재생 버튼 제외)
+            if let newsId = Int64(story.id) {
+                NavigationLink {
+                    NewsDetailView(newsId: newsId)
+                } label: {
+                    Rectangle()
+                        .fill(.clear)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
 
             HStack(alignment: .bottom, spacing: 16) {
                 VStack(alignment: .leading, spacing: 8) {
@@ -45,6 +51,7 @@ struct FeaturedStoryCard: View {
                             .lineLimit(2)
                     }
                 }
+                .allowsHitTesting(false) 
 
                 Spacer(minLength: 8)
 
@@ -55,13 +62,22 @@ struct FeaturedStoryCard: View {
             .padding(20)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .clipShape(RoundedRectangle(cornerRadius: HomeLayout.featuredCornerRadius, style: .continuous))
+        .clipShape(
+            RoundedRectangle(
+                cornerRadius: HomeLayout.featuredCornerRadius,
+                style: .continuous
+            )
+        )
     }
 }
 
 #Preview {
-    FeaturedStoryCard(story: HomeMockData.featuredStories(for: "전체")[0])
+    NavigationStack {
+        FeaturedStoryCard(
+            story: HomeMockData.featuredStories(for: "전체")[0]
+        )
         .frame(height: 360)
         .padding()
         .background(LingcastColor.background)
+    }
 }

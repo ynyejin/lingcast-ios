@@ -26,3 +26,15 @@ struct NewsListResponse: Decodable {
     let totalElements: Int64
     let totalPages: Int
 }
+
+// 뉴스 상세 API 응답
+struct NewsDetailResponse: Decodable {
+    let newsId: Int64
+    let title: String
+    let summary: String?
+    let source: String
+    let category: String
+    let originalUrl: String
+    let imageUrl: String?
+    let publishedAt: String?
+}
