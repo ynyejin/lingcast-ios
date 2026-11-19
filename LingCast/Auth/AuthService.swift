@@ -51,7 +51,7 @@ final class AuthService {
 
         let response: APIResponse<SignupResponse> =
             try await APIClient.shared.request(
-                endpoint: "/api/v1/users/signup",
+                endpoint: "/api/v1/auth/register",
                 method: "POST",
                 body: body
             )
